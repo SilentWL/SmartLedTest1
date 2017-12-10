@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">宝莲灯生产测试工具</string>
+    <string name="app_version">V1.0.1\n2017/12/08</string>
+
+    <string name="string_no_name">未知设备</string>
+
+    <string name="string_ble_not_support">不支持BLE</string>
+    <string name="string_bluetooth_not_support">不支持蓝牙</string>
+
+    <string name="string_scan_devices">发现设备</string>
+    <string name="string_connect_devices">已连接</string>
+</resources>
