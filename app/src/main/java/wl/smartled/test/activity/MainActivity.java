@@ -42,10 +42,18 @@ import wl.smartled.test.view.AlphaImageButton;
 public class MainActivity extends AppCompatActivity implements BluetoothCallback, View.OnTouchListener {
     private static final String TAG = "MainActivity";
 
-    private static final int CHECK_TIME_INTERVAL = 1000;
-    private static final int CONNECTING_WAIT_INTERVAL = 10000;
-    private static final int CONNECTED_TIMEOUT_INTERVAL = 2000;
+    private static final int START_STOP_SCAN_INTERVAL = 3000;
+    private static final int STOP_START_SCAN_INTERVAL = 3000;
+
+    private static final int CHECK_TIME_INTERVAL = 500;
+
+    private static final int RECONNECTING_WAIT_INTERVAL = 8000;
+
+    private static final int WAIT_CONFIRM_CONNECTED_TIMEOUT_INTERVAL = 1500;
+    private static final int CONNECTED_TIMEOUT_INTERVAL = 1500;
     private static final int READ_CONNECTION_STATE_TIMEOUT_INTERVAL = 2000;
+    private static final int READ_CONNECTION_STATE_TIMEOUT_FORCE_CLOSE_INTERVAL = 4000;
+
     private static final int SEND_TEST_COMPLETE_DELAY = 1000;
 
     private AlphaImageButton sendCommand1Button1;
@@ -98,7 +106,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothCallback
 
                     scanMessage.arg1 = 0;
                     scanMessage.arg2 = 0;
-                    handler.sendMessageDelayed(scanMessage, 3500);
+                    handler.sendMessageDelayed(scanMessage, STOP_START_SCAN_INTERVAL);
                 } else {
                     synchronized (scanList) {
                         for (int i = 0; i < scanList.size(); ++i) {
@@ -114,7 +122,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothCallback
 
                     scanMessage.arg1 = 1;
                     scanMessage.arg2 = 0;
-                    handler.sendMessageDelayed(scanMessage, 2500);
+                    handler.sendMessageDelayed(scanMessage, START_STOP_SCAN_INTERVAL);
                 }
 
                 if (isScanListChanged) {
@@ -134,7 +142,9 @@ public class MainActivity extends AppCompatActivity implements BluetoothCallback
                 synchronized (connectList) {
                     connectListInListView.clear();
                     for (DeviceBean deviceBean : connectList) {
-                        connectListInListView.add(deviceBean);
+                        if (deviceBean.getState() != DeviceBean.DEVICE_STATE_WAIT_CONFIRM_CONNECTED) {
+                            connectListInListView.add(deviceBean);
+                        }
                     }
                     connectListAdapter.notifyDataSetChanged();
                 }
@@ -223,48 +233,75 @@ public class MainActivity extends AppCompatActivity implements BluetoothCallback
         executorService.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
+                LogUtils.d(TAG, "scheduleAtFixedRate");
+
                 synchronized (scanList) {
-                    LogUtils.d(TAG, "scheduleAtFixedRate");
+                    boolean refreshScanList = false;
 
                     for (int i = 0; i < scanList.size(); ++i) {
                         DeviceBean deviceBean = scanList.get(i);
                         if (deviceBean.getState() == DeviceBean.DEVICE_STATE_CONNECTING) {
                             deviceBean.setTime(deviceBean.getTime() + CHECK_TIME_INTERVAL);
 
-                            if (deviceBean.getTime() >= CONNECTING_WAIT_INTERVAL) {
+                            if (deviceBean.getTime() >= RECONNECTING_WAIT_INTERVAL) {
                                 LogUtils.d(TAG, "scheduleAtFixedRate --> connecting timeout = " + deviceBean.getAddress());
 
                                 deviceBean.setTime(0);
                                 deviceBean.setState(DeviceBean.DEVICE_STATE_IDLE);
                                 BluetoothUtils.getInstance().disconnectDevice(MainActivity.this, deviceBean.getAddress());
-                                handler.sendEmptyMessage(Messages.BLUETOOTHLE_SCAN_LIST_CHANGED_MESSAGE);
+                                refreshScanList = true;
                             }
                         }
+                    }
+
+                    if (refreshScanList) {
+                        handler.sendEmptyMessage(Messages.BLUETOOTHLE_SCAN_LIST_CHANGED_MESSAGE);
                     }
                 }
 
                 synchronized (connectList) {
-                    for (DeviceBean deviceBean : connectList) {
+                    boolean refreshConnectList = false;
+                    for (int i = 0; i < connectList.size(); ++i) {
+                        DeviceBean deviceBean = connectList.get(i);
                         deviceBean.setTime(deviceBean.getTime() + CHECK_TIME_INTERVAL);
 
-                        if (deviceBean.getState() == DeviceBean.DEVICE_STATE_READ_PENDING) {
+                        if (deviceBean.getState() == DeviceBean.DEVICE_STATE_DISCONNECTING) {
+                            if (deviceBean.getTime() >= READ_CONNECTION_STATE_TIMEOUT_FORCE_CLOSE_INTERVAL) {
+                                LogUtils.d(TAG, "scheduleAtFixedRate --> connection timeout2 = " + deviceBean.getAddress());
+                                BluetoothUtils.getInstance().releaseResource(MainActivity.this, deviceBean.getAddress());
+                                connectList.remove(i);
+                                --i;
+                                refreshConnectList = true;
+                            }
+                        } else if (deviceBean.getState() == DeviceBean.DEVICE_STATE_READ_PENDING) {
                             if (deviceBean.getTime() >= READ_CONNECTION_STATE_TIMEOUT_INTERVAL) {
-                                LogUtils.d(TAG, "scheduleAtFixedRate --> connection timeout = " + deviceBean.getAddress());
+                                LogUtils.d(TAG, "scheduleAtFixedRate --> connection timeout1 = " + deviceBean.getAddress());
 
+                                deviceBean.setTime(0);
                                 BluetoothUtils.getInstance().disconnectDevice(MainActivity.this, deviceBean.getAddress());
                                 deviceBean.setState(DeviceBean.DEVICE_STATE_DISCONNECTING);
-                                handler.sendEmptyMessage(Messages.BLUETOOTHLE_CONNECT_LIST_CHANGED_MESSAGE);
+                                refreshConnectList = true;
                             }
                         } else if (deviceBean.getState() == DeviceBean.DEVICE_STATE_CONNECTED) {
                             if (deviceBean.getTime() >= CONNECTED_TIMEOUT_INTERVAL) {
-                                LogUtils.d(TAG, "scheduleAtFixedRate --> reading connection = " + deviceBean.getAddress());
+                                LogUtils.d(TAG, "scheduleAtFixedRate --> reading connection2 = " + deviceBean.getAddress());
 
                                 deviceBean.setTime(0);
                                 deviceBean.setState(DeviceBean.DEVICE_STATE_READ_PENDING);
                                 BluetoothUtils.getInstance().readConnectionState(MainActivity.this, deviceBean.getAddress());
-                                handler.sendEmptyMessage(Messages.BLUETOOTHLE_CONNECT_LIST_CHANGED_MESSAGE);
+                            }
+                        } else if (deviceBean.getState() == DeviceBean.DEVICE_STATE_WAIT_CONFIRM_CONNECTED){
+                            if (deviceBean.getTime() >= WAIT_CONFIRM_CONNECTED_TIMEOUT_INTERVAL) {
+                                LogUtils.d(TAG, "scheduleAtFixedRate --> reading connection1 = " + deviceBean.getAddress());
+
+                                deviceBean.setTime(0);
+                                deviceBean.setState(DeviceBean.DEVICE_STATE_READ_PENDING);
+                                BluetoothUtils.getInstance().readConnectionState(MainActivity.this, deviceBean.getAddress());
                             }
                         }
+                    }
+                    if (refreshConnectList) {
+                        handler.sendEmptyMessage(Messages.BLUETOOTHLE_CONNECT_LIST_CHANGED_MESSAGE);
                     }
                 }
             }
@@ -318,7 +355,6 @@ public class MainActivity extends AppCompatActivity implements BluetoothCallback
                 }
             }
         }
-
 
         return true;
     }
@@ -388,7 +424,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothCallback
                 int index = ListUtils.containsDeviceBean(connectList, address);
 
                 if (index == -1) {
-                    connectList.add(new DeviceBean(address, name, DeviceBean.DEVICE_STATE_CONNECTED));
+                    connectList.add(new DeviceBean(address, name, DeviceBean.DEVICE_STATE_WAIT_CONFIRM_CONNECTED));
                     handler.sendEmptyMessage(Messages.BLUETOOTHLE_CONNECT_LIST_CHANGED_MESSAGE);
                 }
             }
@@ -397,7 +433,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothCallback
                 int index = ListUtils.containsDeviceBean(connectList, address);
 
                 if (index != -1) {
-                    //BluetoothUtils.getInstance().releaseResource(MainActivity.this, address);
+                    BluetoothUtils.getInstance().releaseResource(MainActivity.this, address);
                     connectList.remove(index);
                     handler.sendEmptyMessage(Messages.BLUETOOTHLE_CONNECT_LIST_CHANGED_MESSAGE);
                 }

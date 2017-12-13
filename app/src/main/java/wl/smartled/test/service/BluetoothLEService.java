@@ -224,7 +224,33 @@ public class BluetoothLEService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
-    private String updateLruGattAddressList(String address, boolean connectOrDisconnect) {
+    private boolean requestGattResourceFromLruAddressList(String address) {
+        boolean requestSuccess = true;
+        String removeAddress = null;
+        int lruAddressIndex = ListUtils.containsString(lruGattAddress, address);
+
+        if (lruAddressIndex != -1) {
+            lruGattAddress.remove(lruAddressIndex);
+        } else {
+            if (bluetoothGattMap.size() >= MAX_GATT_NUMBER && bluetoothGattMap.get(address) == null) {
+                if (lruGattAddress.size() > 0) {
+                    removeAddress = lruGattAddress.remove(lruGattAddress.size() - 1);
+                } else {
+                    requestSuccess = false;
+                }
+            }
+        }
+
+        if (removeAddress != null) {
+            BluetoothGatt removeGatt = bluetoothGattMap.remove(removeAddress);
+            if (removeGatt != null) {
+                removeGatt.close();
+            }
+        }
+        return requestSuccess;
+    }
+
+    private void releaseResourceFromLruAddressList(String address) {
         String removeAddress = null;
         int lruAddressIndex = ListUtils.containsString(lruGattAddress, address);
 
@@ -232,24 +258,12 @@ public class BluetoothLEService extends Service {
             lruGattAddress.remove(lruAddressIndex);
         } else {
             if (bluetoothGattMap.size() >= MAX_GATT_NUMBER) {
-                if (lruGattAddress.size() > 0) {
+                if (bluetoothGattMap.get(address) == null && lruGattAddress.size() > 0) {
                     removeAddress = lruGattAddress.remove(lruGattAddress.size() - 1);
                 }
             }
         }
 
-        if (!connectOrDisconnect) {
-            lruGattAddress.add(0, address);
-        }
-        return removeAddress;
-    }
-
-
-    private void Connect(@NonNull Intent intent, boolean connect) {
-        String address = intent.getStringExtra(Extras.BLUETOOTHLE_ADDRESS);
-        BluetoothGatt gatt = bluetoothGattMap.get(address);
-
-        String removeAddress = updateLruGattAddressList(address, connect);
         if (removeAddress != null) {
             BluetoothGatt removeGatt = bluetoothGattMap.remove(removeAddress);
             if (removeGatt != null) {
@@ -257,7 +271,19 @@ public class BluetoothLEService extends Service {
             }
         }
 
+        lruGattAddress.add(0, address);
+    }
+
+
+    private void Connect(@NonNull Intent intent, boolean connect) {
+        String address = intent.getStringExtra(Extras.BLUETOOTHLE_ADDRESS);
+        BluetoothGatt gatt = bluetoothGattMap.get(address);
+
         if (connect) {
+            if (!requestGattResourceFromLruAddressList(address)) {
+                return;
+            }
+
             if (gatt == null) {
                 BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);  // 通过mac地址获取蓝牙对象，或者可以直接用扫描到的对象，效果都是一样
                 gatt = device.connectGatt(this, false, gattCallback);
@@ -274,14 +300,7 @@ public class BluetoothLEService extends Service {
 
     private void releaseResource(@NonNull Intent intent) {
         String address = intent.getStringExtra(Extras.BLUETOOTHLE_ADDRESS);
-        BluetoothGatt gatt = bluetoothGattMap.get(address);
-
-        lruGattAddress.remove(address);
-
-        if (gatt != null) {
-            gatt.close();
-            bluetoothGattMap.remove(address);
-        }
+        releaseResourceFromLruAddressList(address);
     }
 
     private void sendCommand() {
