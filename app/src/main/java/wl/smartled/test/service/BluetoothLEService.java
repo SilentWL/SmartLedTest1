@@ -47,9 +47,10 @@ import wl.smartled.test.constants.Actions;
 import wl.smartled.test.constants.Extras;
 import wl.smartled.test.constants.Messages;
 import wl.smartled.test.constants.Permissions;
-import wl.smartled.test.utils.ListUtils;
-import wl.smartled.test.utils.LogUtils;
-import wl.smartled.test.utils.PermissionsBroadcastUtils;
+import wl.smartled.test.utils.BKServiceSharePreferencesUtil;
+import wl.smartled.test.utils.ListUtil;
+import wl.smartled.test.utils.LogUtil;
+import wl.smartled.test.utils.PermissionsBroadcastUtil;
 
 
 public class BluetoothLEService extends Service {
@@ -118,7 +119,7 @@ public class BluetoothLEService extends Service {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (action.equals(Actions.ACTION_REQUEST_PERMISSION_RESULT) && Arrays.equals(intent.getStringArrayExtra(Extras.PERMISSION_NAME), Permissions.BLUETOOTH_MODE)) {
-                PermissionsBroadcastUtils.sendPermissionsMessageResult(intent, handler);
+                PermissionsBroadcastUtil.sendPermissionsMessageResult(intent, handler);
             } else if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED)) {
                 isBluetoothEnabled = bluetoothAdapter.isEnabled();
                 if (bluetoothLEServiceCallback != null) {
@@ -151,7 +152,7 @@ public class BluetoothLEService extends Service {
 
             registerReceiver(receiver, intentFilter);
 
-            PermissionsBroadcastUtils.sendRequestPermissionBroadcast(this, Permissions.BLUETOOTH_MODE);
+            PermissionsBroadcastUtil.sendRequestPermissionBroadcast(this, Permissions.BLUETOOTH_MODE);
 
             executorService.scheduleAtFixedRate(new TimerTask() {
                 @Override
@@ -227,7 +228,7 @@ public class BluetoothLEService extends Service {
     private boolean requestGattResourceFromLruAddressList(String address) {
         boolean requestSuccess = true;
         String removeAddress = null;
-        int lruAddressIndex = ListUtils.containsString(lruGattAddress, address);
+        int lruAddressIndex = ListUtil.containsString(lruGattAddress, address);
 
         if (lruAddressIndex != -1) {
             lruGattAddress.remove(lruAddressIndex);
@@ -252,7 +253,7 @@ public class BluetoothLEService extends Service {
 
     private void releaseResourceFromLruAddressList(String address) {
         String removeAddress = null;
-        int lruAddressIndex = ListUtils.containsString(lruGattAddress, address);
+        int lruAddressIndex = ListUtil.containsString(lruGattAddress, address);
 
         if (lruAddressIndex != -1) {
             lruGattAddress.remove(lruAddressIndex);
@@ -401,7 +402,7 @@ public class BluetoothLEService extends Service {
                 bluetoothLEServiceCallback.onScanResult(name, address);
             }
         }
-        LogUtils.d(TAG, "processScanResult, --->name = " + name + ", address = " + address);
+        LogUtil.d(TAG, "processScanResult, --->name = " + name + ", address = " + address);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -524,11 +525,38 @@ public class BluetoothLEService extends Service {
 
         executorService.shutdownNow();
         bluetoothAdapter = null;
+        BKServiceSharePreferencesUtil.writeStopBKServicePreferences(this, true);
         super.onDestroy();
     }
 
     public boolean isBluetoothEnabled() {
         return isBluetoothEnabled;
+    }
+
+    public void forceEnableBluetooth() {
+        if (isStarted) {
+            if (bluetoothAdapter != null) {
+                bluetoothAdapter.enable();
+            }
+        }
+    }
+
+    public void forceDisableBluetooth() {
+        if (isStarted) {
+            if (bluetoothAdapter != null) {
+                for (Map.Entry<String, BluetoothGatt> entry : bluetoothGattMap.entrySet()) {
+                    BluetoothGatt gatt = entry.getValue();
+                    gatt.close();
+                }
+                bluetoothGattMap.clear();
+                lruGattAddress.clear();
+                sendDataAddressSet.clear();
+                isSendDatas1 = false;
+                isSendDatas2 = false;
+
+                bluetoothAdapter.disable();
+            }
+        }
     }
 
     public void enableBluetooth() {

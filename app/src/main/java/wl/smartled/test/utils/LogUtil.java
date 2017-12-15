@@ -4,7 +4,7 @@ import android.util.Log;
 
 import wl.smartled.test.BuildConfig;
 
-public class LogUtils {
+public class LogUtil {
     public static int ERROR = 1;
     public static int WARN = 2;
     public static int INFO = 3;

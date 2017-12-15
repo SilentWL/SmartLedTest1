@@ -10,7 +10,7 @@ import wl.smartled.test.bean.DeviceBean;
  * Created by Administrator on 2017/11/8 0008.
  */
 
-public class ListUtils {
+public class ListUtil {
 
     public static int containsDeviceBean(List<DeviceBean> l, String address) {
         int index = -1;

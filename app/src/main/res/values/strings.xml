@@ -9,4 +9,11 @@
 
     <string name="string_scan_devices">发现设备</string>
     <string name="string_connect_devices">已连接</string>
+
+    <string name="string_restart_app">重启此工具</string>
+    <string name="string_restart_bluetooth">重启手机蓝牙</string>
+
+    <string name="string_restarting_bluetooth">正在重启蓝牙</string>
+    <string name="string_restarting_app">正在重启工具</string>
+
 </resources>

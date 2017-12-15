@@ -15,8 +15,8 @@ import wl.smartled.test.constants.Extras;
 import wl.smartled.test.service.BluetoothLEService;
 
 
-public class BluetoothUtils implements BluetoothCallback {
-    private static BluetoothUtils bluetoothUtils;
+public class BluetoothUtil implements BluetoothCallback {
+    private static BluetoothUtil bluetoothUtil;
     private BluetoothLEService bluetoothLEService;
 
     private BluetoothCallback bluetoothCallback;
@@ -24,7 +24,7 @@ public class BluetoothUtils implements BluetoothCallback {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             bluetoothLEService = ((BluetoothLEService.BluetoothLEServiceBinder) iBinder).getService();
-            bluetoothLEService.setBluetoothLEServiceCallback(bluetoothUtils);
+            bluetoothLEService.setBluetoothLEServiceCallback(bluetoothUtil);
 
             if (bluetoothCallback != null) {
                 if (bluetoothLEService.isBluetoothEnabled() && bluetoothLEService.isServiceStarted()) {
@@ -41,19 +41,19 @@ public class BluetoothUtils implements BluetoothCallback {
         }
     };
 
-    private BluetoothUtils() {
+    private BluetoothUtil() {
 
     }
 
-    public static BluetoothUtils getInstance() {
-        if (bluetoothUtils == null) {
-            synchronized (BluetoothUtils.class) {
-                if (bluetoothUtils == null) {
-                    bluetoothUtils = new BluetoothUtils();
+    public static BluetoothUtil getInstance() {
+        if (bluetoothUtil == null) {
+            synchronized (BluetoothUtil.class) {
+                if (bluetoothUtil == null) {
+                    bluetoothUtil = new BluetoothUtil();
                 }
             }
         }
-        return bluetoothUtils;
+        return bluetoothUtil;
     }
 
     public void bindService(Context c) {
@@ -63,17 +63,25 @@ public class BluetoothUtils implements BluetoothCallback {
     }
 
     public void unbindService(Context c) {
-        c.unbindService(serviceConnection);
-        bluetoothLEService = null;
-    }
-
-    public void enableBluetooth() {
-        if (bluetoothLEService.isServiceStarted() && !bluetoothLEService.isBluetoothEnabled()) {
-            bluetoothLEService.enableBluetooth();
+        if (bluetoothLEService != null) {
+            c.unbindService(serviceConnection);
+            bluetoothLEService = null;
         }
     }
 
-    public void readConnectionState(Context c, String adress){
+    public void forceEnableBluetooth() {
+        if (bluetoothLEService != null && bluetoothLEService.isServiceStarted()) {
+            bluetoothLEService.forceEnableBluetooth();
+        }
+    }
+
+    public void forceDisableBluetooth() {
+        if (bluetoothLEService != null && bluetoothLEService.isServiceStarted()) {
+            bluetoothLEService.forceDisableBluetooth();
+        }
+    }
+
+    public void readConnectionState(Context c, String adress) {
         Intent i = new Intent();
         i.putExtra(Extras.BLUETOOTHLE_ADDRESS, adress);
         sendCommand(c, Actions.BLUETOOTH_LE_SERVICE_READ_CONNECTION_STATE, i);
@@ -243,7 +251,7 @@ public class BluetoothUtils implements BluetoothCallback {
     }
 
     private void sendCommand(Context c, String command, Intent i) {
-        if (bluetoothLEService.isServiceStarted() && bluetoothLEService.isBluetoothEnabled()) {
+        if (bluetoothLEService != null && bluetoothLEService.isServiceStarted() && bluetoothLEService.isBluetoothEnabled()) {
             if (i == null) {
                 i = new Intent();
             }

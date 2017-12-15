@@ -10,7 +10,7 @@ import wl.smartled.test.constants.Actions;
 import wl.smartled.test.constants.Extras;
 import wl.smartled.test.constants.Messages;
 
-public class PermissionsBroadcastUtils {
+public class PermissionsBroadcastUtil {
     public static void sendRequestPermissionResultBroadcast(Context context, boolean success, String permissions[]) {
         Intent i = new Intent(Actions.ACTION_REQUEST_PERMISSION_RESULT);
         i.putExtra(Extras.PERMISSION_NAME, permissions);

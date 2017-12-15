@@ -85,6 +85,58 @@
 
     <LinearLayout
         android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginBottom="10dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginStart="30dp">
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="10dp"
+            android:layout_weight="1"
+            android:background="@android:color/background_dark"
+            android:padding="3dp">
+
+            <wl.smartled.test.view.AlphaImageButton
+                android:id="@+id/aib_restartapp"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/holo_orange_light" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/string_restart_app" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:background="@android:color/background_dark"
+            android:padding="3dp"
+            android:text="@string/string_restart_bluetooth">
+
+            <wl.smartled.test.view.AlphaImageButton
+                android:id="@+id/aib_restartbluetooth"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/holo_blue_light" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/string_restart_bluetooth" />
+        </FrameLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/background_dark"
         android:baselineAligned="false"
@@ -98,7 +150,7 @@
             <wl.smartled.test.view.AlphaImageButton
                 android:id="@+id/aib_sendCommand1"
                 android:layout_width="60dp"
-                android:layout_height="85dp"
+                android:layout_height="75dp"
                 android:layout_gravity="center"
                 android:background="@color/red" />
         </FrameLayout>
@@ -111,7 +163,7 @@
             <wl.smartled.test.view.AlphaImageButton
                 android:id="@+id/aib_sendCommand2"
                 android:layout_width="60dp"
-                android:layout_height="85dp"
+                android:layout_height="75dp"
                 android:layout_gravity="center"
                 android:background="@color/green" />
         </FrameLayout>
@@ -124,7 +176,7 @@
             <wl.smartled.test.view.AlphaImageButton
                 android:id="@+id/aib_sendCommand3"
                 android:layout_width="60dp"
-                android:layout_height="85dp"
+                android:layout_height="75dp"
                 android:layout_gravity="center"
                 android:background="@color/blue" />
         </FrameLayout>
@@ -137,7 +189,7 @@
             <wl.smartled.test.view.AlphaImageButton
                 android:id="@+id/aib_sendCommand4"
                 android:layout_width="60dp"
-                android:layout_height="85dp"
+                android:layout_height="75dp"
                 android:layout_gravity="center"
                 android:background="@color/white" />
         </FrameLayout>
