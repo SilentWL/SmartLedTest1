@@ -346,6 +346,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothCallback
             }, 100L);
         } else if (v.getId() == R.id.aib_restartbluetooth) {
             CircleProgressDialogUtil.show(this, getString(R.string.string_restarting_bluetooth));
+            handler.removeMessages(Messages.BLUETOOTHLE_SCAN_REQUEST_MESSAGE);
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -363,7 +364,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothCallback
                 public void run() {
                     CircleProgressDialogUtil.hideDialog();
                 }
-            }, 5000L);
+            }, 3000L);
         }
     }
 
@@ -451,7 +452,7 @@ public class MainActivity extends AppCompatActivity implements BluetoothCallback
             scanMessage.arg1 = 0;
             scanMessage.arg2 = 1;
 
-            handler.sendMessageDelayed(scanMessage, 10);
+            handler.sendMessageDelayed(scanMessage, 100);
         } else {
             handler.removeMessages(Messages.BLUETOOTHLE_SCAN_REQUEST_MESSAGE);
         }

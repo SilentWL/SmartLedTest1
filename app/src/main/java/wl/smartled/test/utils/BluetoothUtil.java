@@ -81,9 +81,9 @@ public class BluetoothUtil implements BluetoothCallback {
         }
     }
 
-    public void readConnectionState(Context c, String adress) {
+    public void readConnectionState(Context c, String address) {
         Intent i = new Intent();
-        i.putExtra(Extras.BLUETOOTHLE_ADDRESS, adress);
+        i.putExtra(Extras.BLUETOOTHLE_ADDRESS, address);
         sendCommand(c, Actions.BLUETOOTH_LE_SERVICE_READ_CONNECTION_STATE, i);
     }
 

@@ -75,6 +75,7 @@ public class BluetoothLEService extends Service {
     private final Map<String, BluetoothGatt> bluetoothGattMap = new ConcurrentHashMap<>();
     private final List<String> lruGattAddress = new CopyOnWriteArrayList<>();
 
+    private boolean isStartScan;
     private BluetoothLeScanner scaner;
     private ScanCallback scanCallback;
 
@@ -349,14 +350,18 @@ public class BluetoothLEService extends Service {
     }
 
     public void startDiscovery(boolean clearScanList) {
-        if (bluetoothAdapter == null) {
+        if (bluetoothAdapter == null || isStartScan) {
             return;
         }
 
         //判断版本号,如果api版本号大于5.0则使用最新的方法搜素
 //        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
         if (true) {
-            bluetoothAdapter.startLeScan(mLeScanCallback);
+            try {
+                bluetoothAdapter.startLeScan(mLeScanCallback);
+            } catch (Exception e){
+                e.printStackTrace();
+            }
         } else {
             if (scaner == null) {
                 scaner = bluetoothAdapter.getBluetoothLeScanner();
@@ -367,15 +372,20 @@ public class BluetoothLEService extends Service {
             }
             scaner.startScan(scanCallback);
         }
+        isStartScan = true;
     }
 
     public void cancelDiscovery() {
-        if (bluetoothAdapter == null) {
+        if (bluetoothAdapter == null || !isStartScan) {
             return;
         }
 //        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
         if (true) {
-            bluetoothAdapter.stopLeScan(mLeScanCallback);
+            try {
+                bluetoothAdapter.stopLeScan(mLeScanCallback);
+            } catch (Exception e){
+                e.printStackTrace();
+            }
         } else {
             if (scaner != null) {
                 if (scanCallback != null) {
@@ -385,6 +395,7 @@ public class BluetoothLEService extends Service {
                 scaner = null;
             }
         }
+        isStartScan = false;
     }
 
 
